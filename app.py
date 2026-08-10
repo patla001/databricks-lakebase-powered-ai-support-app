@@ -147,6 +147,10 @@ def ensure_tables() -> None:
         ),
     ])
 
+    # Only after the DDL actually succeeded - a failure here (missing GRANT,
+    # instance asleep) must be retried on the next request, not latched in.
+    _tables_ready = True
+
 
 # --------------------------------------------------------------------------
 # Validation helpers - each returns (value, error_message)
@@ -394,13 +398,28 @@ def create_ticket():
 def get_ticket(ticket_id: int):
     """One ticket plus its full message thread."""
     ensure_tables()
-    ticket = _fetch_ticket(ticket_id)
-    if not ticket:
+
+    # Ticket and thread on one connection - this is the most-hit endpoint in
+    # the app, and two separate checkouts doubled its round trips for nothing.
+    ticket_rows, message_rows = lakebase.run_queries([
+        (f"SELECT * FROM {TICKETS_TABLE} WHERE ticket_id = %s", (ticket_id,)),
+        (
+            f"""
+            SELECT message_id, ticket_id, message_text, author, created_at
+            FROM {MESSAGES_TABLE}
+            WHERE ticket_id = %s
+            ORDER BY created_at ASC, message_id ASC
+            """,
+            (ticket_id,),
+        ),
+    ])
+
+    if not ticket_rows:
         return jsonify({"error": f"Ticket {ticket_id} not found."}), 404
 
-    payload = _serialize(ticket)
-    payload["messages"] = _serialize_all(_fetch_messages(ticket_id))
-    payload["message_count"] = len(payload["messages"])
+    payload = _serialize(ticket_rows[0])
+    payload["messages"] = _serialize_all(message_rows)
+    payload["message_count"] = len(message_rows)
     return jsonify(payload)
 
 
@@ -550,31 +569,30 @@ def stats():
     """Headline counters plus per-status and per-priority breakdowns."""
     ensure_tables()
 
-    totals = lakebase.run_query_one(
-        f"""
-        SELECT COUNT(*)                                       AS total_tickets,
-               COUNT(*) FILTER (WHERE status = 'open')        AS open_tickets,
-               COUNT(*) FILTER (WHERE status = 'in_progress') AS in_progress_tickets,
-               COUNT(*) FILTER (WHERE status = 'resolved')    AS resolved_tickets,
-               COUNT(*) FILTER (WHERE status = 'closed')      AS closed_tickets,
-               COUNT(*) FILTER (WHERE priority IN ('high','urgent')
-                                  AND status NOT IN ('resolved','closed'))
-                                                              AS urgent_open,
-               (SELECT COUNT(*) FROM {MESSAGES_TABLE})        AS total_messages
-        FROM {TICKETS_TABLE}
-        """
-    ) or {}
+    # All four on one pooled connection: as separate run_query() calls this was
+    # the slowest endpoint in the app, almost entirely connection setup.
+    totals_rows, by_status, by_priority, by_category = lakebase.run_queries([
+        (
+            f"""
+            SELECT COUNT(*)                                       AS total_tickets,
+                   COUNT(*) FILTER (WHERE status = 'open')        AS open_tickets,
+                   COUNT(*) FILTER (WHERE status = 'in_progress') AS in_progress_tickets,
+                   COUNT(*) FILTER (WHERE status = 'resolved')    AS resolved_tickets,
+                   COUNT(*) FILTER (WHERE status = 'closed')      AS closed_tickets,
+                   COUNT(*) FILTER (WHERE priority IN ('high','urgent')
+                                      AND status NOT IN ('resolved','closed'))
+                                                                  AS urgent_open,
+                   (SELECT COUNT(*) FROM {MESSAGES_TABLE})        AS total_messages
+            FROM {TICKETS_TABLE}
+            """,
+            None,
+        ),
+        (f"SELECT status, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY status", None),
+        (f"SELECT priority, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY priority", None),
+        (f"SELECT category, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY category", None),
+    ])
 
-    by_status = lakebase.run_query(
-        f"SELECT status, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY status"
-    )
-    by_priority = lakebase.run_query(
-        f"SELECT priority, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY priority"
-    )
-    by_category = lakebase.run_query(
-        f"SELECT category, COUNT(*) AS count FROM {TICKETS_TABLE} GROUP BY category"
-    )
-
+    totals = totals_rows[0] if totals_rows else {}
     total = totals.get("total_tickets") or 0
     messages = totals.get("total_messages") or 0
 
