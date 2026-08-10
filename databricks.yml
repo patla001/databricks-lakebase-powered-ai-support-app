@@ -1,0 +1,37 @@
+# Databricks Asset Bundle config for this project.
+#
+# The app itself is deployed through the Apps UI from a Git folder (see
+# README.md); this bundle exists so `databricks sync` and any future jobs have
+# a home. Deploy with: databricks bundle deploy -t dev
+#
+# The workspace host is deliberately NOT hardcoded here. Because the CLI reads
+# this file for *every* command run from this directory, a placeholder host
+# breaks unrelated commands too:
+#
+#   $ databricks current-user me
+#   Error: default auth: cannot configure default credentials
+#
+# With `workspace.host` omitted the CLI falls back to standard unified auth, so
+# point it at your workspace with either:
+#
+#   export DATABRICKS_HOST=https://<your-workspace>.cloud.databricks.com
+#   export DATABRICKS_TOKEN=<your-pat>
+#
+# or a named profile in ~/.databrickscfg:
+#
+#   databricks bundle deploy -t dev -p <profile>
+#
+# Check what will be used with: databricks bundle validate -t dev
+
+bundle:
+  name: databricks-lakebase-powered-ai-support-app
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Shared/.bundle/${bundle.name}/${bundle.target}

@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------------------
+# Secrets - never commit.
+#
+# The trailing-variant patterns matter: plain `.env` does NOT match .env.bak /
+# .env.local / .env.save, which editors and shell redirects create readily.
+# `!.env.example` then allows the placeholder file back in.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+env.dms
+*.envrc
+.envrc
+
+# Databricks CLI / SDK credentials. `databricks auth login` writes a token to
+# ~/.databrickscfg, but a copy dropped in the project directory would be picked
+# up first - and committed.
+.databrickscfg
+databricks.cfg
+.databricks/
+
+# Anything that captured a connection string. The Lakebase DSN carries the
+# Postgres password inline, so a stray log or dump of it is a live credential.
+*.log
+*connection*url*
+*.pgpass
+.pgpass
+
+# Keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+secrets.json
+credentials.json
+service-account*.json
+
+# ---------------------------------------------------------------------------
+# Local environment
+# ---------------------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp

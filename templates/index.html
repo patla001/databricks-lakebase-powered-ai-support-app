@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Center</title>
+<style>
+  /* ---------------------------------------------------------------------
+     Design tokens. Light palette on :root, dark swapped in under
+     prefers-color-scheme, so the console matches whatever the OS is doing.
+     --------------------------------------------------------------------- */
+  :root {
+    --bg:            #f4f6fb;
+    --surface:       #ffffff;
+    --surface-sunk:  #f8f9fc;
+    --border:        #e2e6ef;
+    --border-strong: #cdd4e2;
+    --text:          #1b2130;
+    --muted:         #6b7280;
+    --accent:        #4f46e5;
+    --accent-soft:   #eef0fe;
+    --accent-hover:  #4338ca;
+    --danger:        #dc2626;
+    --danger-soft:   #fdeced;
+    --shadow:        0 1px 2px rgba(18, 24, 40, .06), 0 8px 24px rgba(18, 24, 40, .06);
+    --radius:        12px;
+
+    --open:         #2563eb; --open-soft:        #e6efff;
+    --in_progress:  #b45309; --in_progress-soft: #fdf1dd;
+    --resolved:     #15803d; --resolved-soft:    #e4f6ea;
+    --closed:       #64748b; --closed-soft:      #eef1f5;
+
+    --low:    #64748b; --low-soft:    #eef1f5;
+    --medium: #2563eb; --medium-soft: #e6efff;
+    --high:   #c2410c; --high-soft:   #fdece2;
+    --urgent: #b91c1c; --urgent-soft: #fdeaea;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:            #0f1218;
+      --surface:       #171b24;
+      --surface-sunk:  #12161e;
+      --border:        #262c39;
+      --border-strong: #38404f;
+      --text:          #e8eaf0;
+      --muted:         #949cad;
+      --accent:        #8b87ff;
+      --accent-soft:   #232244;
+      --accent-hover:  #a5a1ff;
+      --danger:        #f87171;
+      --danger-soft:   #33201f;
+      --shadow:        0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+
+      --open:         #7aa7ff; --open-soft:        #1b2740;
+      --in_progress:  #e3b25c; --in_progress-soft: #33280f;
+      --resolved:     #6ede9a; --resolved-soft:    #14301f;
+      --closed:       #9aa5b6; --closed-soft:      #232833;
+
+      --low:    #9aa5b6; --low-soft:    #232833;
+      --medium: #7aa7ff; --medium-soft: #1b2740;
+      --high:   #f0a071; --high-soft:   #3a2415;
+      --urgent: #f87171; --urgent-soft: #3a1c1c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 64px;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* --- Header ---------------------------------------------------------- */
+  header {
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 30px 0 20px;
+  }
+  header h1 { margin: 0; font-size: 23px; letter-spacing: -.02em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .who { margin-left: auto; color: var(--muted); font-size: 13px; }
+  header .who strong { color: var(--text); font-weight: 600; }
+
+  /* --- Notice strip ----------------------------------------------------- */
+  #notice {
+    display: none; margin-bottom: 16px; padding: 11px 14px;
+    border-radius: 10px; font-size: 14px;
+    border: 1px solid transparent;
+  }
+  #notice.show { display: block; }
+  #notice.error { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+  #notice.ok    { background: var(--resolved-soft); border-color: var(--resolved); color: var(--resolved); }
+
+  /* --- Stat tiles ------------------------------------------------------- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow);
+  }
+  .tile .n { font-size: 26px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; }
+  .tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+  .tile.open      .n { color: var(--open); }
+  .tile.progress  .n { color: var(--in_progress); }
+  .tile.resolved  .n { color: var(--resolved); }
+  .tile.urgent    .n { color: var(--urgent); }
+
+  /* --- Toolbar ---------------------------------------------------------- */
+  .toolbar {
+    display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;
+    margin: 20px 0 14px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .toolbar .spacer { flex: 1; }
+
+  input[type=text], input[type=search], select, textarea {
+    font: inherit; color: var(--text); background: var(--surface);
+    border: 1px solid var(--border-strong); border-radius: 9px;
+    padding: 8px 10px; min-width: 130px;
+  }
+  textarea { width: 100%; resize: vertical; min-height: 82px; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent); outline-offset: -1px; border-color: var(--accent);
+  }
+
+  button {
+    font: inherit; font-weight: 550; cursor: pointer;
+    border-radius: 9px; padding: 9px 15px;
+    border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+    transition: background .12s, border-color .12s;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+  button.danger { color: var(--danger); border-color: var(--border-strong); }
+  button.danger:hover:not(:disabled) { border-color: var(--danger); background: var(--danger-soft); }
+  button.solid-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+  /* --- Layout ----------------------------------------------------------- */
+  .columns { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .columns { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface-sunk);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  }
+  .panel-head .count { margin-left: auto; text-transform: none; letter-spacing: 0; }
+
+  /* --- Ticket list ------------------------------------------------------ */
+  #ticket-list { list-style: none; margin: 0; padding: 0; max-height: 62vh; overflow-y: auto; }
+  #ticket-list li {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer; display: flex; flex-direction: column; gap: 6px;
+    border-left: 3px solid transparent;
+  }
+  #ticket-list li:last-child { border-bottom: none; }
+  #ticket-list li:hover { background: var(--surface-sunk); }
+  #ticket-list li.active { background: var(--accent-soft); border-left-color: var(--accent); }
+  #ticket-list li .row1 { display: flex; gap: 8px; align-items: baseline; }
+  #ticket-list li .id { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  #ticket-list li .t { font-weight: 550; line-height: 1.35; }
+  #ticket-list li .row2 { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  #ticket-list li .meta { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  .empty { padding: 34px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* --- Badges ----------------------------------------------------------- */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+  }
+  .badge.s-open        { color: var(--open);        background: var(--open-soft); }
+  .badge.s-in_progress { color: var(--in_progress); background: var(--in_progress-soft); }
+  .badge.s-resolved    { color: var(--resolved);    background: var(--resolved-soft); }
+  .badge.s-closed      { color: var(--closed);      background: var(--closed-soft); }
+  .badge.p-low    { color: var(--low);    background: var(--low-soft); }
+  .badge.p-medium { color: var(--medium); background: var(--medium-soft); }
+  .badge.p-high   { color: var(--high);   background: var(--high-soft); }
+  .badge.p-urgent { color: var(--urgent); background: var(--urgent-soft); }
+  .badge.cat { color: var(--muted); background: var(--surface-sunk); border: 1px solid var(--border); }
+
+  /* --- Detail pane ------------------------------------------------------ */
+  #detail-body { padding: 18px 20px; }
+  #detail-body h2 { margin: 0 0 8px; font-size: 19px; line-height: 1.3; letter-spacing: -.01em; }
+  .detail-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .detail-meta { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .detail-desc {
+    background: var(--surface-sunk); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; margin-bottom: 18px;
+    white-space: pre-wrap; font-size: 14px;
+  }
+  .controls {
+    display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+    padding-bottom: 18px; margin-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  .controls .spacer { flex: 1; }
+
+  .thread { list-style: none; margin: 0; padding: 6px 0 0; }
+  .thread li { padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .thread li:last-child { border-bottom: none; }
+  .thread .who { font-weight: 600; font-size: 13.5px; }
+  .thread .when { color: var(--muted); font-size: 12px; margin-left: 8px; }
+  .thread .body { margin-top: 5px; white-space: pre-wrap; font-size: 14.5px; }
+
+  .composer { margin-top: 14px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .composer .actions { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+  .composer .actions .spacer { flex: 1; }
+  .charcount { color: var(--muted); font-size: 12px; }
+  .charcount.over { color: var(--danger); font-weight: 600; }
+
+  /* --- Dialogs ---------------------------------------------------------- */
+  dialog {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); color: var(--text);
+    padding: 0; width: min(540px, calc(100vw - 32px)); box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(12, 16, 24, .45); }
+  dialog h3 { margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--border); font-size: 16px; }
+  dialog .content { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  dialog .content .field { gap: 6px; }
+  dialog .content .field label { text-transform: none; font-size: 13px; letter-spacing: 0; color: var(--text); font-weight: 550; }
+  dialog .content .field .hint { font-size: 12px; color: var(--muted); }
+  dialog .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  dialog .foot {
+    display: flex; gap: 10px; justify-content: flex-end;
+    padding: 14px 20px; border-top: 1px solid var(--border); background: var(--surface-sunk);
+  }
+  dialog input, dialog select { width: 100%; }
+  .dialog-error { display: none; color: var(--danger); font-size: 13.5px; }
+  .dialog-error.show { display: block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Support Center</h1>
+    <span class="sub">Tickets and messages stored in Lakebase</span>
+    <span class="who">signed in as <strong>{{ current_user }}</strong></span>
+  </header>
+
+  <div id="notice" role="status" aria-live="polite"></div>
+
+  <section class="stats" id="stats" aria-label="Ticket statistics"></section>
+
+  <div class="toolbar">
+    <div class="field">
+      <label for="f-status">Status</label>
+      <select id="f-status"></select>
+    </div>
+    <div class="field">
+      <label for="f-priority">Priority</label>
+      <select id="f-priority"></select>
+    </div>
+    <div class="field">
+      <label for="f-category">Category</label>
+      <select id="f-category"></select>
+    </div>
+    <div class="field">
+      <label for="f-search">Search</label>
+      <input type="search" id="f-search" placeholder="title or description" autocomplete="off">
+    </div>
+    <div class="spacer"></div>
+    <button class="primary" id="btn-new">+ New ticket</button>
+  </div>
+
+  <div class="columns">
+    <div class="panel">
+      <div class="panel-head">Tickets <span class="count" id="list-count"></span></div>
+      <ul id="ticket-list"></ul>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Ticket detail</div>
+      <div id="detail-body">
+        <div class="empty">Select a ticket to read its messages.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New ticket ---------------------------------------------------------- -->
+<dialog id="dlg-new">
+  <form method="dialog" id="form-new">
+    <h3>New support ticket</h3>
+    <div class="content">
+      <div class="dialog-error" id="new-error"></div>
+      <div class="field">
+        <label for="n-title">Title</label>
+        <input type="text" id="n-title" required autocomplete="off">
+        <span class="hint">3&ndash;{{ title_max }} characters. A short summary of the problem.</span>
+      </div>
+      <div class="two">
+        <div class="field">
+          <label for="n-priority">Priority</label>
+          <select id="n-priority"></select>
+        </div>
+        <div class="field">
+          <label for="n-category">Category</label>
+          <select id="n-category"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="n-description">Description</label>
+        <textarea id="n-description" placeholder="What happened, and what did you expect?"></textarea>
+      </div>
+      <div class="field">
+        <label for="n-message">First message <span class="hint">(optional)</span></label>
+        <textarea id="n-message" placeholder="Anything you would say to the support agent right now."></textarea>
+      </div>
+    </div>
+    <div class="foot">
+      <button type="button" id="new-cancel">Cancel</button>
+      <button type="submit" class="primary" id="new-submit">Create ticket</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Delete confirmation -------------------------------------------------- -->
+<dialog id="dlg-delete">
+  <h3>Delete this ticket?</h3>
+  <div class="content">
+    <div id="del-summary"></div>
+    <div class="hint" style="color: var(--muted); font-size: 13px;">
+      This permanently removes the ticket and every message on it. It cannot be undone.
+    </div>
+  </div>
+  <div class="foot">
+    <button type="button" id="del-cancel">Keep ticket</button>
+    <button type="button" class="solid-danger" id="del-confirm">Delete permanently</button>
+  </div>
+</dialog>
+
+<script>
+/* Server-side constants, so the dropdowns and the validation limits can never
+   disagree with what app.py will actually accept. */
+const META = {
+  statuses:   {{ statuses|tojson }},
+  priorities: {{ priorities|tojson }},
+  categories: {{ categories|tojson }},
+  limits: {
+    title:       {{ title_max }},
+    description: {{ description_max }},
+    message:     {{ message_max }}
+  }
+};
+
+const $ = (id) => document.getElementById(id);
+let selectedId = null;
+let searchTimer = null;
+
+/* ---------------------------------------------------------------------
+   Helpers
+   --------------------------------------------------------------------- */
+
+/** "in_progress" -> "In progress" */
+function labelize(value) {
+  const s = String(value).replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Build an element and set its text via textContent.
+    Never innerHTML: ticket titles and message bodies are free text typed by
+    users, so interpolating them into markup would be an XSS hole. */
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = text;
+  return node;
+}
+
+function badge(kind, value) {
+  return el("span", `badge ${kind}-${value}`, labelize(value));
+}
+
+function fillSelect(select, values, { allLabel } = {}) {
+  select.replaceChildren();
+  if (allLabel) select.appendChild(new Option(allLabel, ""));
+  for (const v of values) select.appendChild(new Option(labelize(v), v));
+}
+
+function timeAgo(iso) {
+  const then = new Date(iso);
+  const mins = Math.round((Date.now() - then.getTime()) / 60000);
+  if (mins < 1)      return "just now";
+  if (mins < 60)     return `${mins}m ago`;
+  if (mins < 60 * 24) return `${Math.round(mins / 60)}h ago`;
+  const days = Math.round(mins / (60 * 24));
+  if (days < 30)     return `${days}d ago`;
+  return then.toLocaleDateString();
+}
+
+function fullTime(iso) {
+  return new Date(iso).toLocaleString();
+}
+
+function notify(message, kind = "error") {
+  const box = $("notice");
+  box.textContent = message;
+  box.className = `show ${kind}`;
+  if (kind === "ok") setTimeout(() => box.classList.remove("show"), 3500);
+}
+
+function clearNotice() {
+  // Errors only. Every successful action ("Message added.") immediately
+  // reloads the list, and a blanket clear here would wipe the confirmation
+  // milliseconds after it appeared - the success notice would never be
+  // readable. It expires on its own timer instead.
+  const box = $("notice");
+  if (box.classList.contains("error")) box.className = "";
+}
+
+/** One fetch wrapper for every call, so a server-side validation message
+    ({"error": "..."}) always surfaces instead of a bare status code. */
+async function api(path, options = {}) {
+  const opts = { ...options };
+  if (opts.body !== undefined) {
+    opts.headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+    opts.body = JSON.stringify(opts.body);
+  }
+  const resp = await fetch(path, opts);
+  let data = null;
+  try { data = await resp.json(); } catch { /* empty or non-JSON body */ }
+  if (!resp.ok) {
+    throw new Error((data && data.error) || `${resp.status} ${resp.statusText}`);
+  }
+  return data;
+}
+
+/* ---------------------------------------------------------------------
+   Statistics
+   --------------------------------------------------------------------- */
+
+async function loadStats() {
+  let s;
+  try {
+    s = await api("/api/stats");
+  } catch (err) {
+    notify(`Could not load statistics: ${err.message}`);
+    return;
+  }
+
+  const tiles = [
+    ["", s.total_tickets, "total tickets"],
+    ["open", s.open_tickets, "open"],
+    ["progress", s.in_progress_tickets, "in progress"],
+    ["resolved", s.resolved_tickets, "resolved"],
+    ["urgent", s.urgent_open, "high / urgent open"],
+    ["", s.total_messages, `messages (${s.avg_messages_per_ticket} avg)`],
+  ];
+
+  const box = $("stats");
+  box.replaceChildren();
+  for (const [cls, value, label] of tiles) {
+    const tile = el("div", `tile ${cls}`.trim());
+    tile.appendChild(el("div", "n", value ?? 0));
+    tile.appendChild(el("div", "k", label));
+    box.appendChild(tile);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Ticket list
+   --------------------------------------------------------------------- */
+
+function filterQuery() {
+  const params = new URLSearchParams();
+  for (const [key, id] of [["status", "f-status"], ["priority", "f-priority"], ["category", "f-category"]]) {
+    if ($(id).value) params.set(key, $(id).value);
+  }
+  const q = $("f-search").value.trim();
+  if (q) params.set("q", q);
+  const s = params.toString();
+  return s ? `?${s}` : "";
+}
+
+async function loadTickets() {
+  const list = $("ticket-list");
+  let tickets;
+  try {
+    tickets = await api(`/api/tickets${filterQuery()}`);
+  } catch (err) {
+    list.replaceChildren(el("div", "empty", `Could not load tickets: ${err.message}`));
+    notify(`Could not load tickets: ${err.message}`);
+    return;
+  }
+  clearNotice();
+
+  $("list-count").textContent = tickets.length === 1 ? "1 ticket" : `${tickets.length} tickets`;
+  list.replaceChildren();
+
+  if (!tickets.length) {
+    const anyFilter = filterQuery() !== "";
+    list.appendChild(el("div", "empty", anyFilter
+      ? "No tickets match these filters."
+      : "No tickets yet. Create the first one."));
+    return;
+  }
+
+  for (const t of tickets) {
+    const li = el("li");
+    li.dataset.id = t.ticket_id;
+    if (t.ticket_id === selectedId) li.classList.add("active");
+
+    const row1 = el("div", "row1");
+    row1.appendChild(el("span", "id", `#${t.ticket_id}`));
+    row1.appendChild(el("span", "t", t.title));
+
+    const row2 = el("div", "row2");
+    row2.appendChild(badge("s", t.status));
+    row2.appendChild(badge("p", t.priority));
+    const count = Number(t.message_count);
+    row2.appendChild(el("span", "meta",
+      `${count} ${count === 1 ? "msg" : "msgs"} · ${timeAgo(t.last_activity)}`));
+
+    li.append(row1, row2);
+    li.addEventListener("click", () => selectTicket(t.ticket_id));
+    list.appendChild(li);
+  }
+}
+
+function markActive(id) {
+  for (const li of $("ticket-list").children) {
+    if (li.dataset) li.classList.toggle("active", Number(li.dataset.id) === id);
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Ticket detail
+   --------------------------------------------------------------------- */
+
+async function selectTicket(id) {
+  selectedId = id;
+  markActive(id);
+  const body = $("detail-body");
+  body.replaceChildren(el("div", "empty", "Loading…"));
+
+  let ticket;
+  try {
+    ticket = await api(`/api/tickets/${id}`);
+  } catch (err) {
+    body.replaceChildren(el("div", "empty", `Could not load ticket #${id}: ${err.message}`));
+    return;
+  }
+  renderDetail(ticket);
+}
+
+function renderDetail(t) {
+  const body = $("detail-body");
+  body.replaceChildren();
+
+  body.appendChild(el("h2", null, `#${t.ticket_id} · ${t.title}`));
+
+  const badges = el("div", "detail-badges");
+  badges.append(badge("s", t.status), badge("p", t.priority), el("span", "badge cat", labelize(t.category)));
+  body.appendChild(badges);
+
+  body.appendChild(el("div", "detail-meta",
+    `Opened by ${t.created_by} on ${fullTime(t.created_at)} · last updated ${timeAgo(t.updated_at)}`));
+
+  if (t.description) body.appendChild(el("div", "detail-desc", t.description));
+
+  /* --- Status / priority controls: change fires a PATCH immediately ---- */
+  const controls = el("div", "controls");
+
+  for (const [field, values] of [["status", META.statuses], ["priority", META.priorities]]) {
+    const wrap = el("div", "field");
+    const label = el("label", null, labelize(field));
+    label.htmlFor = `d-${field}`;
+    const select = document.createElement("select");
+    select.id = `d-${field}`;
+    fillSelect(select, values);
+    select.value = t[field];
+    select.addEventListener("change", async () => {
+      select.disabled = true;
+      try {
+        const updated = await api(`/api/tickets/${t.ticket_id}`, {
+          method: "PATCH",
+          body: { [field]: select.value },
+        });
+        notify(`Ticket #${t.ticket_id} ${field} set to “${labelize(updated[field])}”.`, "ok");
+        renderDetail({ ...updated, messages: t.messages });
+        await Promise.all([loadTickets(), loadStats()]);
+      } catch (err) {
+        notify(`Could not update ${field}: ${err.message}`);
+        select.value = t[field];   // roll the control back to the stored value
+      } finally {
+        select.disabled = false;
+      }
+    });
+    wrap.append(label, select);
+    controls.appendChild(wrap);
+  }
+
+  controls.appendChild(el("div", "spacer"));
+  const del = el("button", "danger", "Delete ticket");
+  del.type = "button";
+  del.addEventListener("click", () => confirmDelete(t));
+  controls.appendChild(del);
+  body.appendChild(controls);
+
+  /* --- Message thread -------------------------------------------------- */
+  const messages = t.messages || [];
+  if (!messages.length) {
+    body.appendChild(el("div", "empty", "No messages on this ticket yet."));
+  } else {
+    const thread = el("ul", "thread");
+    for (const m of messages) {
+      const li = el("li");
+      const head = el("div");
+      head.append(el("span", "who", m.author), el("span", "when", fullTime(m.created_at)));
+      li.append(head, el("div", "body", m.message_text));
+      thread.appendChild(li);
+    }
+    body.appendChild(thread);
+  }
+
+  /* --- Composer -------------------------------------------------------- */
+  const composer = el("div", "composer");
+  const textarea = document.createElement("textarea");
+  textarea.id = "m-text";
+  textarea.placeholder = "Add a message to this ticket…";
+  textarea.maxLength = META.limits.message;
+
+  const actions = el("div", "actions");
+  const counter = el("span", "charcount", `0 / ${META.limits.message}`);
+  const send = el("button", "primary", "Send message");
+  send.type = "button";
+  send.disabled = true;
+
+  textarea.addEventListener("input", () => {
+    const n = textarea.value.trim().length;
+    counter.textContent = `${n} / ${META.limits.message}`;
+    counter.classList.toggle("over", n > META.limits.message);
+    send.disabled = n === 0 || n > META.limits.message;
+  });
+
+  send.addEventListener("click", async () => {
+    send.disabled = true;
+    try {
+      await api(`/api/tickets/${t.ticket_id}/messages`, {
+        method: "POST",
+        body: { message_text: textarea.value },
+      });
+      notify("Message added.", "ok");
+      await Promise.all([selectTicket(t.ticket_id), loadTickets(), loadStats()]);
+    } catch (err) {
+      notify(`Could not add message: ${err.message}`);
+      send.disabled = false;
+    }
+  });
+
+  actions.append(counter, el("div", "spacer"), send);
+  composer.append(textarea, actions);
+  body.appendChild(composer);
+}
+
+/* ---------------------------------------------------------------------
+   Delete, behind a confirmation step
+   --------------------------------------------------------------------- */
+
+function confirmDelete(t) {
+  const count = (t.messages || []).length;
+  const summary = $("del-summary");
+  summary.replaceChildren();
+  summary.appendChild(el("div", null, `#${t.ticket_id} · ${t.title}`));
+  summary.appendChild(el("div", null,
+    `${count} ${count === 1 ? "message" : "messages"} will be deleted with it.`));
+
+  const dlg = $("dlg-delete");
+  const confirm = $("del-confirm");
+
+  const onConfirm = async () => {
+    confirm.disabled = true;
+    try {
+      await api(`/api/tickets/${t.ticket_id}`, { method: "DELETE", body: { confirm: true } });
+      dlg.close();
+      selectedId = null;
+      $("detail-body").replaceChildren(el("div", "empty", "Ticket deleted. Select another ticket."));
+      notify(`Ticket #${t.ticket_id} deleted.`, "ok");
+      await Promise.all([loadTickets(), loadStats()]);
+    } catch (err) {
+      notify(`Could not delete ticket: ${err.message}`);
+      dlg.close();
+    } finally {
+      confirm.disabled = false;
+    }
+  };
+
+  // once:true so a second delete never stacks a second handler on the button.
+  confirm.addEventListener("click", onConfirm, { once: true });
+  dlg.addEventListener("close", () => confirm.removeEventListener("click", onConfirm), { once: true });
+  dlg.showModal();
+}
+
+$("del-cancel").addEventListener("click", () => $("dlg-delete").close());
+
+/* ---------------------------------------------------------------------
+   New ticket
+   --------------------------------------------------------------------- */
+
+$("btn-new").addEventListener("click", () => {
+  $("form-new").reset();
+  $("n-priority").value = "medium";
+  $("n-category").value = "general";
+  $("new-error").className = "dialog-error";
+  $("dlg-new").showModal();
+  $("n-title").focus();
+});
+
+$("new-cancel").addEventListener("click", () => $("dlg-new").close());
+
+$("form-new").addEventListener("submit", async (event) => {
+  // The dialog form is method="dialog", which would close on submit before the
+  // request finishes; take over so the dialog can show a server-side error.
+  event.preventDefault();
+
+  const errorBox = $("new-error");
+  const title = $("n-title").value.trim();
+
+  // Client-side pre-check purely for speed of feedback; app.py revalidates
+  // everything, and the CHECK constraints backstop that in turn.
+  if (title.length < 3 || title.length > META.limits.title) {
+    errorBox.textContent = `Title must be between 3 and ${META.limits.title} characters.`;
+    errorBox.classList.add("show");
+    return;
+  }
+
+  const submit = $("new-submit");
+  submit.disabled = true;
+  try {
+    const created = await api("/api/tickets", {
+      method: "POST",
+      body: {
+        title,
+        description: $("n-description").value,
+        priority: $("n-priority").value,
+        category: $("n-category").value,
+        message_text: $("n-message").value,
+      },
+    });
+    $("dlg-new").close();
+    notify(`Ticket #${created.ticket_id} created.`, "ok");
+    await Promise.all([loadTickets(), loadStats()]);
+    await selectTicket(created.ticket_id);
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.classList.add("show");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+/* ---------------------------------------------------------------------
+   Filters and boot
+   --------------------------------------------------------------------- */
+
+fillSelect($("f-status"), META.statuses, { allLabel: "All statuses" });
+fillSelect($("f-priority"), META.priorities, { allLabel: "All priorities" });
+fillSelect($("f-category"), META.categories, { allLabel: "All categories" });
+fillSelect($("n-priority"), META.priorities);
+fillSelect($("n-category"), META.categories);
+$("n-priority").value = "medium";
+$("n-category").value = "general";
+$("n-title").maxLength = META.limits.title;
+$("n-description").maxLength = META.limits.description;
+$("n-message").maxLength = META.limits.message;
+
+for (const id of ["f-status", "f-priority", "f-category"]) {
+  $(id).addEventListener("change", loadTickets);
+}
+$("f-search").addEventListener("input", () => {
+  // Debounced: typing a word should not fire a query per keystroke.
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadTickets, 250);
+});
+
+loadStats();
+loadTickets();
+</script>
+</body>
+</html>
