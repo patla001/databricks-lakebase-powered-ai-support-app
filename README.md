@@ -266,6 +266,27 @@ the same rows the UI just wrote.
 
 ---
 
+## Reflection
+
+**What was the most difficult part?**
+Wiring up the credentials, not writing the app. Lakebase needs its own Postgres role and
+password, that password has to go into a Databricks secret scope, and the deployed app
+only sees it through a Secret app resource whose key must match `app.yaml` exactly.
+
+**How is Lakebase different from storing this data in a traditional analytics table?**
+Lakebase is a real transactional database, so it enforces the link between `tickets` and
+`ticket_messages`, deletes a message thread along with its ticket, and updates a single
+row in milliseconds. A Delta table in Unity Catalog is built for scanning millions of rows
+at once — it cannot enforce that relationship, and it is not meant for editing one record
+at a time.
+
+**What feature would you add next?**
+Search across message text, so a ticket can be found by what people actually wrote in it
+rather than only by its title — the data is already there, and it is the natural first
+step toward the AI-agent work later in the boot camp.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause |
