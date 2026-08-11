@@ -11,6 +11,11 @@ and a browser refresh shows exactly what the database holds.
 The HTTP surface is a plain JSON API under `/api/*`, with the HTML page as just one of its
 clients — later boot-camp projects can point an AI agent at the same endpoints.
 
+**Live app:** https://lakebase-support-app-2808874854650870.aws.databricksapps.com
+
+Databricks Apps cannot be made anonymously public, so that link only opens for signed-in
+users in the workspace's account. Everyone else gets an authentication prompt.
+
 ---
 
 ## Contents
