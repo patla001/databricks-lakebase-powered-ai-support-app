@@ -3,9 +3,14 @@
 The root `README.md` links to two images from this directory. Drop them in with
 **exactly these filenames** and they render automatically — no markdown changes needed.
 
+All four come from `notebooks/Lakebase-Tables-And-Records.ipynb` except the first.
+
 | filename | what to capture |
 |---|---|
 | `app.png` | The deployed app with a ticket selected, so the message thread is visible. Keep the URL bar in frame (`…databricksapps.com`) — that is what shows it is deployed rather than localhost. The stat tiles across the top demonstrate the statistics bonus for free. |
+| `lakebase-tables.png` | The **"Tables, row counts, and the foreign key"** cell. The foreign-key row is the important one: it shows `ticket_messages.ticket_id → tickets.ticket_id` with `delete_rule CASCADE`, which is the relationship requirement proven rather than asserted. |
+| `lakebase-tickets.png` | The **"All tickets"** cell. Widen the `ticket_id` column first — it defaults narrow enough to clip its own header and render `21` as `.1`. |
+| `lakebase-messages.png` | The **"All messages"** cell, showing every message under its ticket title. |
 
 > **Mask the workspace ID.** A Databricks App URL looks like
 > `lakebase-support-app-<workspace-id>.<region>.databricksapps.com`, and that number is

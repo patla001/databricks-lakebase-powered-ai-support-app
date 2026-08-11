@@ -268,16 +268,26 @@ the same rows the UI just wrote.
 
 ## Screenshots
 
-<!-- Drop app.png and lakebase.png into docs/img/ and these render automatically.
+<!-- Drop the .png files into docs/img/ and these render automatically.
      See docs/img/README.md for exactly what to capture. -->
 
-**The deployed app** — ticket list, message thread, and statistics.
+**The deployed app** — ticket list, message thread, filters, and statistics.
 
 ![Deployed support app](docs/img/app.png)
 
-**Lakebase tables and sample records** — the same data, read straight from Postgres.
+**The Lakebase tables** — row counts, columns, and the foreign key from
+`ticket_messages.ticket_id` to `tickets.ticket_id` with `ON DELETE CASCADE`.
 
-![Lakebase tables and records](docs/img/lakebase.png)
+![Lakebase tables and foreign key](docs/img/lakebase-tables.png)
+
+**Sample records — `tickets`** — every ticket with its status, priority, category and
+message count.
+
+![tickets sample records](docs/img/lakebase-tickets.png)
+
+**Sample records — `ticket_messages`** — every message, joined to the ticket it belongs to.
+
+![ticket_messages sample records](docs/img/lakebase-messages.png)
 
 ---
 
