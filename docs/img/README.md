@@ -6,6 +6,13 @@ The root `README.md` links to two images from this directory. Drop them in with
 | filename | what to capture |
 |---|---|
 | `app.png` | The deployed app with a ticket selected, so the message thread is visible. Keep the URL bar in frame (`…databricksapps.com`) — that is what shows it is deployed rather than localhost. The stat tiles across the top demonstrate the statistics bonus for free. |
+
+> **Mask the workspace ID.** A Databricks App URL looks like
+> `lakebase-support-app-<workspace-id>.<region>.databricksapps.com`, and that number is
+> also embedded in your workspace hostname. It is not a credential — Apps still require
+> authentication, so nobody gets in with it — but this repository is public, and blurring
+> the digits costs nothing. `lakebase-support-app-████.aws.databricksapps.com` still proves
+> the app is deployed. The same ID appears in the browser URL of any notebook screenshot.
 | `lakebase.png` | Lakebase tables and records. Easiest source: pull the repo in Databricks, run `notebooks/Lakebase-Tables-And-Records.ipynb`, and capture the **"All tickets"** cell — 6 tickets with status, priority, category and message counts. Keep the notebook path visible at the top so it is clear this ran inside Databricks against Lakebase. |
 
 Optional third image, if you want to show the schema and the foreign key:
