@@ -266,6 +266,21 @@ the same rows the UI just wrote.
 
 ---
 
+## Screenshots
+
+<!-- Drop app.png and lakebase.png into docs/img/ and these render automatically.
+     See docs/img/README.md for exactly what to capture. -->
+
+**The deployed app** — ticket list, message thread, and statistics.
+
+![Deployed support app](docs/img/app.png)
+
+**Lakebase tables and sample records** — the same data, read straight from Postgres.
+
+![Lakebase tables and records](docs/img/lakebase.png)
+
+---
+
 ## Reflection
 
 **What was the most difficult part?**
